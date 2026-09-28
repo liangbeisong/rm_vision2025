@@ -1,0 +1,4 @@
+Log file created at: 2026/09/27 19:17:26
+Running on machine: ubuntu
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+E0927 19:17:26.657323 117010 MVCAMAPI.cpp:382] CameraInit Failed, err:-18,Version:2.1.0.49,FriendlyName:mv2,SN:042071320222

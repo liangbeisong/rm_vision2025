@@ -1,0 +1,16 @@
+Log file created at: 2026/09/27 18:43:25
+Running on machine: ubuntu
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+E0927 18:43:25.567317 92698 U3VControl.cpp:249] WriteAddr:268435472, BulkIn error:-7
+E0927 18:43:25.567799 92698 CameraU3VBase.cpp:555] Function:SetMediaTypeSel, Code:set_pixel_format(type), Error:-52
+E0927 18:43:26.591866 92698 U3VControl.cpp:249] WriteAddr:268435844, BulkIn error:-7
+E0927 18:43:27.619494 92698 U3VControl.cpp:249] WriteAddr:268435568, BulkIn error:-7
+E0927 18:43:27.619735 92698 CameraU3VBase.cpp:1726] Function:SetStrobeMode, Code:set_strobe_mode(iMode), Error:-52
+E0927 18:43:28.669364 92698 U3VControl.cpp:249] WriteAddr:268435584, BulkIn error:-7
+E0927 18:43:28.669528 92698 CameraU3VBase.cpp:2419] Function:SetHDFlip, Code:set_flip_ctrl(uMirrSet), Error:-52
+E0927 18:43:29.711117 92698 U3VControl.cpp:249] WriteAddr:268435508, BulkIn error:-7
+E0927 18:43:29.711297 92698 CameraU3VBase.cpp:395] Function:SetExpTime, Code:set_exposure_time((float)fExpTime), Error:-52
+E0927 18:43:30.743155 92698 U3VControl.cpp:249] WriteAddr:268435460, BulkIn error:-7
+E0927 18:43:30.743304 92698 CameraU3VBase.cpp:782] Function:PauseVideo, Code:set_acquisition_command(0), Error:-52
+E0927 18:43:31.787397 92698 U3VControl.cpp:249] WriteAddr:268435460, BulkIn error:-7
+E0927 18:43:31.787559 92698 CameraU3VBase.cpp:787] Function:PauseVideo, Code:set_acquisition_command(1), Error:-52

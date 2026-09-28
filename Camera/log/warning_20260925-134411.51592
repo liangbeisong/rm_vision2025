@@ -1,0 +1,4 @@
+Log file created at: 2026/09/25 13:44:11
+Running on machine: ubuntu
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+W0925 13:44:11.813004 51616 MVCameraBase.cpp:100] Device:(name:mv2 sn:042071320222)Lost
