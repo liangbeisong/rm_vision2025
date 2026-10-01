@@ -8,10 +8,14 @@
 #include <image_transport/image_transport.hpp>
 #include <image_transport/publisher.hpp>
 #include <image_transport/subscriber_filter.hpp>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 // STD
@@ -20,6 +24,7 @@
 #include <vector>
 
 #include "armor_detector/detector.hpp"
+#include "armor_detector/coarse_number_mapping.hpp"
 #include "armor_detector/number_classifier.hpp"
 #include "armor_detector/pnp_solver.hpp"
 #include "auto_aim_interfaces/msg/armors.hpp"
@@ -34,6 +39,12 @@ public:
 
 private:
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr img_msg);
+  void pairedImageCallback(
+    const sensor_msgs::msg::Image::ConstSharedPtr main_msg,
+    const sensor_msgs::msg::Image::ConstSharedPtr number_msg);
+  void processImage(
+    const sensor_msgs::msg::Image::ConstSharedPtr main_msg,
+    const sensor_msgs::msg::Image::ConstSharedPtr number_msg);
 
   std::unique_ptr<Detector> initDetector();
   std::vector<Armor> detectArmors(const sensor_msgs::msg::Image::ConstSharedPtr & img_msg);
@@ -64,6 +75,22 @@ private:
 
   // Image subscrpition
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr img_sub_;
+  using SyncPolicy = message_filters::sync_policies::ApproximateTime<
+    sensor_msgs::msg::Image, sensor_msgs::msg::Image>;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>> main_filter_;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>> number_filter_;
+  std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> image_sync_;
+  std::string number_source_;
+  int max_frame_delta_ms_;
+  int main_calibration_width_;
+  int main_calibration_height_;
+  double number_roi_padding_;
+  CoarseNumberMapping number_mapping_;
+  image_transport::Publisher number_result_img_pub_;
+  image_transport::Publisher number_crop_img_pub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr number_status_pub_;
+  rclcpp::TimerBase::SharedPtr pair_watchdog_;
+  rclcpp::Time last_pair_time_;
 
   // Debug information
   bool debug_;

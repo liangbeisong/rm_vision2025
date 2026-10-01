@@ -62,13 +62,11 @@ armor_detector ── /detector/armors ──▶ armor_tracker
 
 ## 编译
 
-将仓库克隆到 ROS 2 工作空间的 `src` 目录：
+克隆仓库并进入项目根目录：
 
 ```bash
-mkdir -p ~/ros_ws/src
-cd ~/ros_ws/src
-git clone https://github.com/liangbeisong/rm_vision2025.git rm_vision
-cd ~/ros_ws
+git clone https://github.com/liangbeisong/rm_vision2025.git
+cd rm_vision2025
 ```
 
 安装依赖并编译：
@@ -77,7 +75,7 @@ cd ~/ros_ws
 source /opt/ros/humble/setup.bash
 sudo rosdep init        # 本机首次使用 rosdep 时执行
 rosdep update
-rosdep install --from-paths src --ignore-src -r -y
+rosdep install --from-paths . --ignore-src -r -y
 colcon build --symlink-install
 source install/setup.bash
 ```
@@ -87,6 +85,30 @@ source install/setup.bash
 ```bash
 sudo apt install ros-humble-serial-driver
 ```
+
+## 快速启动
+
+编译完成后，在仓库根目录运行：
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+./run_vision.sh
+```
+
+也可以直接使用 ROS 2 launch 命令启动完整系统：
+
+```bash
+ros2 launch rm_vision_bringup vision_bringup.launch.py
+```
+
+无相机、串口硬件时使用：
+
+```bash
+ros2 launch rm_vision_bringup no_hardware.launch.py
+```
+
+启动前请确认 `rm_vision/rm_vision_bringup/config/launch_params.yaml` 中的 `camera` 已设置为实际使用的相机：`mv` 表示迈德威视，`hik` 表示海康机器人。
 
 ## 配置
 
@@ -148,10 +170,10 @@ sudo usermod -aG dialout "$USER"
 
 ### 完整系统
 
-在工作空间根目录执行：
+在仓库根目录执行：
 
 ```bash
-./src/rm_vision/run_vision.sh
+./run_vision.sh
 ```
 
 也可以手动启动：
@@ -240,6 +262,64 @@ ros2 run tf2_ros tf2_echo odom camera_link
 ```
 
 ## 相关文档
+
+### 双相机数字筛选（试验阶段）
+
+`rm_vision_bringup/config/node_params.yaml` 中 `number_source: video4` 时，
+`run_vision.sh` 同时启动第二相机采集节点。`device: auto` 会按
+`camera_name_match` 查找唯一的 V4L2 采集节点；也可指定 `/dev/videoN` 或
+`/dev/v4l/by-id/...`。MindVision 负责灯条、装甲板候选和
+PnP 距离；第二相机只负责数字分类。时间差超过 30 ms、粗映射缺失或越界、多个候选
+的预计数字框重叠、MLP 置信度不足或数字为 `negative` 时，候选不会发布。
+在未生成 `config/number_mapping.yaml` 前，双相机模式会保守丢弃所有候选。
+若要暂时恢复原流程，设置 `number_source: mindvision`；此时不启动第二相机。
+
+接机后先检查 `v4l2-ctl --list-devices`、对应设备的 `--list-formats-ext`、
+`ros2 topic hz /number_camera/image_raw` 和 8 米处原始数字像素尺寸。
+当前设备列举为 `/dev/video0`、`/dev/video1`，其中 `video0` 支持 1920×1080
+MJPEG 约 31 fps；默认按相机名称自动匹配采集节点并请求这个格式。
+并确认主相机实际输出为标定文件记录的 1440×1080；仅修改 YAML 中宽高
+不能代替重新标定。两相机应使用相同 ROS 时钟；当前时间戳为软件采集时间，
+运动目标如出现时间误差，需要硬件同步或更精确的时间戳。
+现有 1、3、5 米采样照片中的 MindVision 实际为 1280×1024，和该标定文件不符；
+在修正主相机内参前，不应启用双相机映射。
+现有照片自动拟合出的结果保存在 `config/number_mapping_auto_draft.yaml`，
+仅供检查，不是运行时加载的 `number_mapping.yaml`。
+
+采样、标注、拟合（在工作区根目录运行）：
+
+```bash
+python3 rm_vision/rm_vision_bringup/scripts/collect_number_pairs.py --output /tmp/number_pairs --distance-m 1 --count 30
+# 分别在约 3、5、8 米重复采样，输出到同一目录。
+python3 rm_vision/rm_vision_bringup/scripts/annotate_number_pairs.py /tmp/number_pairs
+python3 rm_vision/rm_vision_bringup/scripts/fit_number_mapping.py \
+  /tmp/number_pairs/annotations.jsonl \
+  rm_vision/rm_vision_bringup/config/number_mapping.yaml
+colcon build --packages-select rm_vision_bringup --symlink-install
+```
+
+标注时每帧可点选多个 MindVision 装甲板中心，依次框出第二画面中对应的数字；
+按 `q` 进入下一帧。拟合文件只用于采样深度和画面位置范围内，不能外推。
+只有一块蓝色装甲板、且两路画面都能看到蓝灯条时，也可先自动生成草稿标注和
+稳健拟合结果（不会覆盖人工标注）：
+
+```bash
+python3 rm_vision/rm_vision_bringup/scripts/auto_annotate_number_pairs.py /tmp/number_pairs
+python3 rm_vision/rm_vision_bringup/scripts/fit_number_mapping.py \
+  /tmp/number_pairs/auto_annotations.jsonl \
+  /tmp/number_pairs/number_mapping_auto_draft.yaml --robust
+```
+
+自动结果仅是粗映射草稿，不能仅凭拟合样本上的低误差就投入使用。先核对
+MindVision 实际分辨率与内参标定文件一致，再用未参与拟合的静止画面验证位置误差，
+并用多目标画面验证不会串号；通过后才将草稿文件作为正式 `number_mapping.yaml`。
+调试话题包括 `/detector/number_camera_result_img`、
+`/detector/number_camera_crop`、`/detector/number_camera_status`。
+
+需要用独立于拟合样本的 1、3、5、8 米多目标录像统计各距离通过率、数字正确率、
+跨目标串号和新增延迟。阶段目标：各距离通过率 ≥90%，有效数字正确率 ≥95%，
+无跨目标串号。若 8 米数字本身像素不足，先调整镜头或采集参数；若 MLP 不达标，
+采集第二相机裁剪图重训；若粗映射串号，则停止使用并做双目标定。
 
 - [装甲板检测](rm_auto_aim/armor_detector/README.md)
 - [目标跟踪](rm_auto_aim/armor_tracker/README.md)

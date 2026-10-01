@@ -1,48 +1,105 @@
+# 相机节点参数
 /camera_node:
   ros__parameters:
+    # 相机标定文件路径
     camera_info_url: package://rm_vision_bringup/config/camera_info.yaml
-    exposure_time: 2500
-    gain: 8.0
-    flip_image: true
+    # 曝光时间，单位：微秒
+    exposure_time: 1000
+    # 迈德威视相机模拟增益
+    analog_gain: 32
+    # 是否将图像旋转 180 度
+    flip_image: false
 
+# 串口通信节点参数
 /serial_driver:
   ros__parameters:
+    # 串口数据时间戳补偿，单位：秒
     timestamp_offset: 0.006
+    # 串口设备路径
     device_name: /dev/ttyACM0
+    # 波特率
     baud_rate: 115200
+    # 流控制方式
     flow_control: none
+    # 校验方式
     parity: none
+    # 停止位
     stop_bits: "1"
+
+# 装甲板检测节点参数
+/number_camera:
+  ros__parameters:
+    # 自动按相机名称查找唯一的视频采集节点；也可填绝对设备路径
+    device: auto
+    camera_name_match: "USB 2.0 Camera: HD USB Camera"
+    # video0 支持 1920x1080 MJPEG 约 31 fps；优先保证远距离数字像素尺寸
+    pixel_format: MJPG
+    width: 1920
+    height: 1080
+    fps: 30.0
+    frame_id: number_camera
 
 /armor_detector:
   ros__parameters:
+    # 是否发布检测过程中的调试信息和图像
     debug: true
 
+    # 敌方颜色：0 表示红色，1 表示蓝色
     detect_color: 0
+    # 红、蓝通道最大亮度的二值化阈值
     binary_thres: 80
 
+    # 灯条最小宽高比（短边/长边）
     light.min_ratio: 0.1
+    # 两根灯条的最小长度比（短灯条/长灯条）
     armor.min_light_ratio: 0.8
 
+    # 数字分类器最低置信度
     classifier_threshold: 0.8
+    # 数字来源：mindvision（原流程）或 video4（双相机筛选）
+    number_source: video4
+    # 双相机模式下始终使用第二相机分类；单相机排查时可设为 false
+    use_number_classifier: true
+    # 两路图像允许的最大时间差，单位毫秒
+    max_frame_delta_ms: 30
+    # 第二相机预计数字框放大系数
+    number_roi_padding: 1.0
+    # 主相机标定文件对应的分辨率；实际图像不一致时拒绝双相机映射
+    main_calibration_width: 1440
+    main_calibration_height: 1080
+    # 不作为有效装甲板输出的分类类别
     ignore_classes: ["negative"]
 
+# 装甲板跟踪节点参数
 /armor_tracker:
   ros__parameters:
+    # 跟踪结果使用的目标坐标系
     target_frame: odom
+    # 可跟踪装甲板的最大距离，单位：米
     max_armor_distance: 10.0
 
+    # 扩展卡尔曼滤波器参数
     ekf:
+      # 位置过程噪声方差
       sigma2_q_xyz: 0.05
+      # 偏航角过程噪声方差
       sigma2_q_yaw: 5.0
+      # 目标半径过程噪声方差
       sigma2_q_r: 80.0
 
+      # 位置测量噪声系数
       r_xyz_factor: 0.0004
+      # 偏航角测量噪声
       r_yaw: 0.005
 
+    # 目标匹配与状态切换参数
     tracker:
+      # 相邻帧装甲板允许的最大匹配距离，单位：米
       max_match_distance: 0.5
+      # 相邻帧装甲板允许的最大偏航角差，单位：弧度
       max_match_yaw_diff: 1.0
 
+      # 进入稳定跟踪状态所需的连续匹配次数
       tracking_thres: 5
+      # 目标丢失后的最大保留时间，单位：秒
       lost_time_thres: 1.0

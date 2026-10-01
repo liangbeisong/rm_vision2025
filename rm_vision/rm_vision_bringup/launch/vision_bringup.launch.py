@@ -1,6 +1,7 @@
 import os
 import sys
 from ament_index_python.packages import get_package_share_directory
+import yaml
 sys.path.append(os.path.join(get_package_share_directory('rm_vision_bringup'), 'launch'))
 
 
@@ -33,7 +34,10 @@ def generate_launch_description():
                     package='armor_detector',
                     plugin='rm_auto_aim::ArmorDetectorNode',
                     name='armor_detector',
-                    parameters=[node_params],
+                    parameters=[node_params, {
+                        'number_mapping_path': os.path.join(
+                            get_package_share_directory('rm_vision_bringup'),
+                            'config', 'number_mapping.yaml')}],
                     extra_arguments=[{'use_intra_process_comms': True}]
                 ),
                 ComposableNode(
@@ -76,9 +80,25 @@ def generate_launch_description():
         actions=[serial_driver_node],
     )
 
-    return LaunchDescription([
+    number_camera_node = Node(
+        package='rm_vision_bringup',
+        executable='number_camera_node.py',
+        name='number_camera',
+        output='both',
+        emulate_tty=True,
+        parameters=[node_params],
+        on_exit=Shutdown(),
+    )
+
+    with open(node_params, encoding='utf-8') as params_file:
+        number_source = yaml.safe_load(params_file)['/armor_detector']['ros__parameters'].get(
+            'number_source', 'mindvision')
+    actions = [
         SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'),
         robot_state_publisher,
         cam_detector,
         delay_serial_node,
-    ])
+    ]
+    if number_source == 'video4':
+        actions.insert(3, number_camera_node)
+    return LaunchDescription(actions)

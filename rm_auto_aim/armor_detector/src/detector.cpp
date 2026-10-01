@@ -31,9 +31,15 @@ std::vector<Armor> Detector::detect(const cv::Mat & input)
   lights_ = findLights(input, binary_img);
   armors_ = matchLights(lights_);
 
-  if (!armors_.empty()) {
+  if (!armors_.empty() && use_number_classifier) {
     classifier->extractNumbers(input, armors_);
     classifier->classify(armors_);
+  } else if (!use_number_classifier) {
+    for (auto & armor : armors_) {
+      armor.number.clear();
+      armor.confidence = 0.0f;
+      armor.classfication_result = "unclassified";
+    }
   }
 
   return armors_;
@@ -41,11 +47,15 @@ std::vector<Armor> Detector::detect(const cv::Mat & input)
 
 cv::Mat Detector::preprocessImage(const cv::Mat & rgb_img)
 {
-  cv::Mat gray_img;
-  cv::cvtColor(rgb_img, gray_img, cv::COLOR_RGB2GRAY);
+  // Keep red and blue lights equally visible before checking their color.
+  // Grayscale would turn a saturated red pixel (255, 0, 0) into 76, below a threshold of 80.
+  std::vector<cv::Mat> channels;
+  cv::split(rgb_img, channels);
+  cv::Mat brightness_img;
+  cv::max(channels[0], channels[2], brightness_img);
 
   cv::Mat binary_img;
-  cv::threshold(gray_img, binary_img, binary_thres, 255, cv::THRESH_BINARY);
+  cv::threshold(brightness_img, binary_img, binary_thres, 255, cv::THRESH_BINARY);
 
   return binary_img;
 }
@@ -61,7 +71,8 @@ std::vector<Light> Detector::findLights(const cv::Mat & rbg_img, const cv::Mat &
   this->debug_lights.data.clear();
 
   for (const auto & contour : contours) {
-    if (contour.size() < 5) continue;
+    // CHAIN_APPROX_SIMPLE can represent a rectangular light with only four points.
+    if (contour.size() < 4) continue;
 
     auto r_rect = cv::minAreaRect(contour);
     auto light = Light(r_rect);

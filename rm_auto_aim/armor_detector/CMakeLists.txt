@@ -53,8 +53,14 @@ if(BUILD_TESTING)
   ament_add_gtest(test_node_startup test/test_node_startup.cpp)
   target_link_libraries(test_node_startup ${PROJECT_NAME})
 
+  ament_add_gtest(test_detector test/test_detector.cpp)
+  target_link_libraries(test_detector ${PROJECT_NAME})
+
   ament_add_gtest(test_number_cls test/test_number_cls.cpp)
   target_link_libraries(test_number_cls ${PROJECT_NAME})
+
+  ament_add_gtest(test_coarse_mapping test/test_coarse_mapping.cpp)
+  target_link_libraries(test_coarse_mapping ${PROJECT_NAME})
 
 endif()
 
