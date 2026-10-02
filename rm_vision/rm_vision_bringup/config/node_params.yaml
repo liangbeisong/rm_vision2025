@@ -1,9 +1,9 @@
 /camera_node:
   ros__parameters:
     camera_info_url: package://rm_vision_bringup/config/camera_info.yaml
-    exposure_time: 2500
-    gain: 8.0
-    flip_image: true
+    exposure_time: 4300
+    gain: 33.0
+    flip_image: false
 
 /serial_driver:
   ros__parameters:
@@ -22,9 +22,12 @@
     binary_thres: 80
 
     light.min_ratio: 0.1
-    armor.min_light_ratio: 0.8
+    light.max_ratio: 0.6
+    armor.min_light_ratio: 0.6
 
-    classifier_threshold: 0.8
+    classifier_threshold: 0.5
+    number_gain: 1.5 # 数字区域灰度图的数字增益，1.0 为不调整
+    enable_number_filter: true # 灯条配对实验：跳过数字分类及其过滤
     ignore_classes: ["negative"]
 
 /armor_tracker:

@@ -190,10 +190,13 @@ std::unique_ptr<Detector> ArmorDetectorNode::initDetector()
   auto model_path = pkg_path + "/model/mlp.onnx";
   auto label_path = pkg_path + "/model/label.txt";
   double threshold = this->declare_parameter("classifier_threshold", 0.7);
+  double number_gain = this->declare_parameter("number_gain", 1.0);
+  detector->enable_number_filter = this->declare_parameter("enable_number_filter", true);
   std::vector<std::string> ignore_classes =
     this->declare_parameter("ignore_classes", std::vector<std::string>{"negative"});
   detector->classifier =
     std::make_unique<NumberClassifier>(model_path, label_path, threshold, ignore_classes);
+  detector->classifier->number_gain = number_gain;
 
   return detector;
 }
@@ -208,6 +211,8 @@ std::vector<Armor> ArmorDetectorNode::detectArmors(
   detector_->binary_thres = get_parameter("binary_thres").as_int();
   detector_->detect_color = get_parameter("detect_color").as_int();
   detector_->classifier->threshold = get_parameter("classifier_threshold").as_double();
+  detector_->classifier->number_gain = get_parameter("number_gain").as_double();
+  detector_->enable_number_filter = get_parameter("enable_number_filter").as_bool();
 
   auto armors = detector_->detect(img);
 

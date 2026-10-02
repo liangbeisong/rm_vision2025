@@ -29,6 +29,7 @@ public:
   void classify(std::vector<Armor> & armors);
 
   double threshold;
+  double number_gain = 1.0;
 
 private:
   cv::dnn::Net net_;

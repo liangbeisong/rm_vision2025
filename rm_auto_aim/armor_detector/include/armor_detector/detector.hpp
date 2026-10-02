@@ -58,6 +58,7 @@ public:
 
   int binary_thres;
   int detect_color;
+  bool enable_number_filter = true;
   LightParams l;
   ArmorParams a;
 

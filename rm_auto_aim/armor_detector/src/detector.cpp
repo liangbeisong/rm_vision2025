@@ -33,7 +33,14 @@ std::vector<Armor> Detector::detect(const cv::Mat & input)
 
   if (!armors_.empty()) {
     classifier->extractNumbers(input, armors_);
-    classifier->classify(armors_);
+    if (enable_number_filter) {
+      classifier->classify(armors_);
+    } else {
+      for (auto & armor : armors_) {
+        armor.number = "unknown";
+        armor.classfication_result = "number filter off";
+      }
+    }
   }
 
   return armors_;
